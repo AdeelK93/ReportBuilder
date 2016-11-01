@@ -10,42 +10,44 @@ options(shiny.sanitize.errors=F)
 defaultsql <- "SELECT * FROM db\nWHERE \"Test\" = 'EN Cold Crank'\nAND \"Date\" < '2015-12-01';"
 
 ui <- function(request) {
-  fluidPage(
-    theme = shinythemes::shinytheme("paper"),
+  fluidPage(theme = shinythemes::shinytheme("paper"),tags$div(
+    class="wrap",
     tags$head(
-      tags$style(".editor {position: relative;width: 100%;height: 200px;}"),
-      tags$style(".sqleditor {position: relative;width: 100%;height: 150px;}"),
+      tags$link(rel="stylesheet",type="text/css",href="style.css"),
       tags$script(src="ace/ace.js"),
       tags$script(src="ace/ext-language_tools.js"),
       tags$script(src="acebuilder.min.js"),
       tags$script(src="plotbuilder.min.js")
     ),
-    titlePanel("SQL Report Builder"),
     
-    sidebarPanel(
+    #sidebar
+    tags$aside(
+      bookmarkButton("Bookmark State",class="btn btn-primary"),
+      downloadButton('download','Download Report',class="btn btn-primary"),
+      tags$hr(),
+      
       tags$div(id="sql",name="sql",class="sqleditor form-group shiny-input-container"),
       helpText("Use SQL query to pull up the data you want to study. Dataset can later be referenced as the variable 'x'. 
+               Transaction is set to read-only, so alter and drop table will fail.
                Remember to double quote column names and single quote strings."),
       actionButton('qBtn','Run Query',icon("search"),class="btn"),
       br(),
       tags$b("Summary of query:"),
-      verbatimTextOutput("summary"),
-      tags$hr(),
-      bookmarkButton("Bookmark State",class="btn btn-primary"),
-      downloadButton('download','Download Report',class="btn btn-primary")
+      verbatimTextOutput("summary")
     ),
     
-    mainPanel(
-      fillRow(
-        textInput("Title","Report Title","Report Title"),
-        textInput("Author","Report Author")
+    #main
+    tags$article(
+      titlePanel("SQL Report Builder"),
+      fluidRow(
+        column(6,textInput("Title","Report Title","Report Title")),
+        column(6,textInput("Author","Report Author"))
       ),
-      br(),br(),br(),br(),
       tags$div(id = 'report'),
       actionButton('iBtn','Insert Section',class="btn"), 
       actionButton('rBtn','Remove Last',class="btn")
-    ) 
-  )
+    )
+  ))
 }
 
 server <- function(input, output, session) {
@@ -67,8 +69,12 @@ server <- function(input, output, session) {
       RPostgreSQL::PostgreSQL(),host="localhost",
       user="postgres",password="pg"
     )
-    query <- sqlInterpolate(conn,isolate(input$sql))
+    #prevent accidental deletion/dropping of tables
+    query <- paste0("SET TRANSACTION READ ONLY;\n",isolate(input$sql))
+    query <- sqlInterpolate(conn,query)
     x <- dbGetQuery(conn, query)
+    #make sure nothing is committed
+    dbRollback(conn)
     dbDisconnect(conn)
     #update autocomplete with database column names
     runjs(paste0("coln=[",paste0(sapply(colnames(x),function(x){
@@ -95,7 +101,7 @@ server <- function(input, output, session) {
     if(ID %in% inserted) return(0)
     insertUI(
       selector = '#report',
-      ui = tags$div(boxUI(ID),id = ID)
+      ui = tags$div(boxUI(ID),id = ID,class="panel")
     )
     inserted <<- c(inserted, ID)
     callModule(dynPlot,ID,ID=ID)
@@ -119,7 +125,8 @@ server <- function(input, output, session) {
       od <- getwd()
       setwd(tempdir())
       filen <- make.names(input$Title)
-      sql <- gsub("\n","\n# ",sqlInterpolate(ANSI(),input$sql))
+      sql <- paste0("SET TRANSACTION READ ONLY;\n",input$sql)
+      sql <- gsub("\n","\n# ",sqlInterpolate(ANSI(),sql))
       header <- sprintf(
 "---
 title: %s
