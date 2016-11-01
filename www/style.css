@@ -13,6 +13,7 @@ html, body {
   height: 100%;
 }
 .wrap {
+  padding-top: 60px;
   height: 100vh;
   display: flex;
   flex: 1;
@@ -27,11 +28,17 @@ aside {
 article {
   flex: 2;
 }
-@media (max-width: 700px) {
+@media (max-width: 767px) {
   .wrap {
     flex-direction: column;
   }
-  aside {
+  /* Hiding these on mobile for now */
+  aside, .btn, .editor {
     display:none;
   }
+}
+h3, .h3 {
+    margin-top: 0;
+    color: #ffffff;
+    font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }

@@ -2,7 +2,8 @@
 # smart multicycle handling
 # table and js plot outputs
 # colorline dashed line support
-# restore progress
+# restore progress bar
+# https://github.com/daattali/advanced-shiny/tree/master/update-input
 library(shiny)
 library(rmarkdown)
 library(DBI)
@@ -12,6 +13,7 @@ defaultsql <- "SELECT * FROM db\nWHERE \"Test\" = 'EN Cold Crank'\nAND \"Date\" 
 ui <- function(request) {
   fluidPage(theme = shinythemes::shinytheme("paper"),tags$div(
     class="wrap",
+    titlePanel(NULL,"SQL Report Builder"),
     tags$head(
       tags$link(rel="stylesheet",type="text/css",href="style.css"),
       tags$script(src="ace/ace.js"),
@@ -20,34 +22,46 @@ ui <- function(request) {
       tags$script(src="plotbuilder.min.js")
     ),
     
+    #title navbar
+    tags$div(
+      class="navbar-inverse navbar-fixed-top",
+      titlePanel(NULL,"SQL Report Builder"),
+      tags$div(
+        class="container",
+        tags$div(
+          class="navbar-left",h3("SQL Report Builder")
+        ),
+        tags$div(
+          class="navbar-right",
+          bookmarkButton("Bookmark State"),
+          downloadButton('download','Download Report')
+        )
+      )
+    ),
+    
     #sidebar
     tags$aside(
-      bookmarkButton("Bookmark State",class="btn btn-primary"),
-      downloadButton('download','Download Report',class="btn btn-primary"),
-      tags$hr(),
-      
       tags$div(id="sql",name="sql",class="sqleditor form-group shiny-input-container"),
       helpText("Use SQL query to pull up the data you want to study. Dataset can later be referenced as the variable 'x'. 
                Transaction is set to read-only, so alter and drop table will fail.
                Remember to double quote column names and single quote strings."),
-      actionButton('qBtn','Run Query',icon("search"),class="btn"),
+      actionButton('qBtn','Run Query',icon("search")),
       br(),
       tags$b("Summary of query:"),
       verbatimTextOutput("summary")
-    ),
+      ),
     
     #main
     tags$article(
-      titlePanel("SQL Report Builder"),
       fluidRow(
         column(6,textInput("Title","Report Title","Report Title")),
         column(6,textInput("Author","Report Author"))
       ),
       tags$div(id = 'report'),
-      actionButton('iBtn','Insert Section',class="btn"), 
-      actionButton('rBtn','Remove Last',class="btn")
+      actionButton('iBtn','Insert Section'), 
+      actionButton('rBtn','Remove Last')
     )
-  ))
+    ))
 }
 
 server <- function(input, output, session) {
@@ -79,7 +93,7 @@ server <- function(input, output, session) {
     #update autocomplete with database column names
     runjs(paste0("coln=[",paste0(sapply(colnames(x),function(x){
       sprintf("{value:'%s',score:1000,meta:'Database'}",x)
-      }),collapse = ","),"];"))
+    }),collapse = ","),"];"))
     return(x)
   })
   output$summary <- renderPrint(
@@ -93,7 +107,7 @@ server <- function(input, output, session) {
   filter.max <- reactive({if(is.null(db())) return(rep(NaN,6))
     sapply(db()[filter.cols],max)
   })
-
+  
   #insert a new section
   observeEvent(input$iBtn, {
     btn <- input$iBtn
@@ -128,29 +142,29 @@ server <- function(input, output, session) {
       sql <- paste0("SET TRANSACTION READ ONLY;\n",input$sql)
       sql <- gsub("\n","\n# ",sqlInterpolate(ANSI(),sql))
       header <- sprintf(
-"---
-title: %s
-author: %s
-output: 
-  html_notebook: 
-    code_folding: hide
-theme: paper
----
-
-```{r setup,include=F}
-knitr::opts_chunk$set(echo=TRUE,warning=FALSE)
-library(tidyverse)
-x <- readRDS('%s.rds')
-# Alternately, you can use a sql connection to load the data rather than the rds
-# library(DBI)
-# conn <- dbConnect(
-#   RPostgreSQL::PostgreSQL(),host='localhost',
-#   user='postgres',password='pg'
-# )
-# x <- dbGetQuery(conn, \"%s\")
-# dbDisconnect(conn)
-```
-",input$Title,input$Author,filen,sql
+        "---
+        title: %s
+        author: %s
+        output: 
+        html_notebook: 
+        code_folding: hide
+        theme: paper
+        ---
+        
+        ```{r setup,include=F}
+        knitr::opts_chunk$set(echo=TRUE,warning=FALSE)
+        library(tidyverse)
+        x <- readRDS('%s.rds')
+        # Alternately, you can use a sql connection to load the data rather than the rds
+        # library(DBI)
+        # conn <- dbConnect(
+        #   RPostgreSQL::PostgreSQL(),host='localhost',
+        #   user='postgres',password='pg'
+        # )
+        # x <- dbGetQuery(conn, \"%s\")
+        # dbDisconnect(conn)
+        ```
+        ",input$Title,input$Author,filen,sql
       )
       body <- sapply(unique(inserted),function(x) callModule(dynReport,x)) %>%
         paste(collapse="\\pagebreak\n")
@@ -162,8 +176,8 @@ x <- readRDS('%s.rds')
       setwd(od) #go back to the original directory
     },
     contentType = "application/zip"
-  )
-
+      )
+  
   #bookmarking/restore
   setBookmarkExclude(c(
     "modalq","modalcx","modalcy","modaldx","modaldv","modaldy",
@@ -209,7 +223,7 @@ x <- readRDS('%s.rds')
     lapply(inserted,function(ID) {
       insertUI(
         selector = '#report',
-        ui = tags$div(boxUI(ID),id = ID)
+        ui = tags$div(boxUI(ID),id = ID,class="panel")
       )
       callModule(dynPlot,ID,ID=ID)
       runjs(aceBuilder(ID,state$input[[paste0(ID,"-e")]]))

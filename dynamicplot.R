@@ -74,10 +74,10 @@ dynPlot <- function(input,output,session,ID) {
         )
       ),
       footer=fluidRow(
-        column(2,actionButton("modalbar","Bar Graph",icon("bar-chart"),class="btn btn-primary")),
-        column(2,actionButton("modalbox","Box Plot",icon("archive"),class="btn btn-primary")),
-        column(2,actionButton("modalline","Line (All)",icon("line-chart"),class="btn btn-primary")),
-        column(2,actionButton("modalline2","Line (Avg)",icon("area-chart"),class="btn btn-primary")),
+        column(2,actionButton("modalbar","Bar Graph",icon("bar-chart"),class="btn-primary")),
+        column(2,actionButton("modalbox","Box Plot",icon("archive"),class="btn-primary")),
+        column(2,actionButton("modalline","Line (All)",icon("line-chart"),class="btn-primary")),
+        column(2,actionButton("modalline2","Line (Avg)",icon("area-chart"),class="btn-primary")),
         column(4,modalButton("Dismiss",icon("remove")))
       ),
       #this variable will be used to identify the code editor to modify. also initializing buttons.
@@ -104,14 +104,14 @@ dynReport <- function(input,output,session) {
     else input$e
   }
   sprintf(
-"
-##%s  
-%s
-  
-```{r %s}
-%s
-```
-",input$t,input$c,chunkTitle,input$e
+    "
+    ##%s  
+    %s
+    
+    ```{r %s}
+    %s
+    ```
+    ",input$t,input$c,chunkTitle,input$e
   )
 }
 
