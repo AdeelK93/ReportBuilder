@@ -1,3 +1,23 @@
+$(document).ready(function() {
+  var t=$('#Title').val();
+    if (t==""||t=="Report Title") {
+      t="SQL Report Builder";
+    }
+    $('#Navtitle')[0].innerHTML=`<h3>${t}</h3>`;
+    document.title=t;
+  titleSet();
+});
+
+function titleSet() {
+  $('#Title').on('keyup', function(e) {
+    var t=$('#Title').val();
+    if (t==""||t=="Report Title") {
+      t="SQL Report Builder";
+    }
+    $('#Navtitle')[0].innerHTML=`<h3>${t}</h3>`;
+    document.title=t;
+  });
+}
 function radioSet(a,b) {$('input[name="'+a+'"][value="'+b+'"]').prop("checked",!0)}
 
 function modalBar() {
@@ -85,7 +105,7 @@ function modalQuery() {
       
     // Continuous
     case 1:
-      q="ggplot(aes(".concat(document.getElementById('modalcx').value,",",document.getElementById('modalcy').value,",color=Type,fill=Type))");
+      q=`ggplot(aes(${document.getElementById('modalcx').value},${document.getElementById('modalcy').value},color=Type,fill=Type))`;
       break;
       
     // Discrete
@@ -94,12 +114,12 @@ function modalQuery() {
       var dv=document.getElementById('modaldv').value; // known value
       var dy=document.getElementById('modaldy').value; // unknown
       if (!isNaN(parseInt(dv))) {
-        q="summarize(Variable=".concat(dy,"[which.min(abs(",dx,"-",dv,"))]) %>%\n ggplot(aes(Type,Variable,color=Type,fill=Type))");
+        q=`summarize(Variable=${dy}[which.min(abs(${dx}-${dv}))]) %>%\n ggplot(aes(Type,Variable,color=Type,fill=Type))`;
       } else {
         if (dx==dy) {
-          q="summarize(Variable=".concat(dv,"(",dx,")) %>%\n ggplot(aes(Type,Variable,color=Type,fill=Type))");
+          q=`summarize(Variable=${dv}(${dx})) %>%\n ggplot(aes(Type,Variable,color=Type,fill=Type))`;
         } else {
-          q="filter(".concat(dx,"==",dv,"(",dx,")) %>%\n ggplot(aes(Type,",dy,",color=Type,fill=Type))");
+          q=`filter(${dx}==${dv}(${dx})) %>%\n ggplot(aes(Type,${dy},color=Type,fill=Type))`;
         }
       }
       break;
@@ -125,42 +145,42 @@ function modalFilter() {
   var f="";
   
   if (voltageV[0]!=voltageD.min) {
-    f=f.concat("Voltage>=",voltageV[0],",");
+    f=`${f}Voltage>=${voltageV[0]},`;
   }
   if (voltageV[1]!=voltageD.max) {
-    f=f.concat("Voltage<=",voltageV[1],",");
+    f=`${f}Voltage<=${voltageV[1]},`;
   }
   if (currentV[0]!=currentD.min) {
-    f=f.concat("Current>=",currentV[0],",");
+    f=`${f}Current>=${currentV[0]},`;
   }
   if (currentV[1]!=currentD.max) {
-    f=f.concat("Current<=",currentV[1],",");
+    f=`${f}Current<=${currentV[1]},`;
   }
   if (amphoursV[0]!=amphoursD.min) {
-    f=f.concat("Amp.Hours>=",amphoursV[0],",");
+    f=`${f}Amp.Hours>=${amphoursV[0]},`;
   }
   if (amphoursV[1]!=amphoursD.max) {
-    f=f.concat("Amp.Hours<=",amphoursV[1],",");
+    f=`${f}Amp.Hours<=${amphoursV[1]},`;
   }
   if (totaltimeV[0]!=totaltimeD.min) {
-    f=f.concat("Total.Time>=",totaltimeV[0],",");
+    f=`${f}Total.Time>=${totaltimeV[0]},`;
   }
   if (totaltimeV[1]!=totaltimeD.max) {
-    f=f.concat("Total.Time<=",totaltimeV[1],",");
+    f=`${f}Total.Time<=${totaltimeV[1]},`;
   }
   if (steptimeV[0]!=steptimeD.min) {
-    f=f.concat("Step.time>=",steptimeV[0],",");
+    f=`${f}Step.time>=${steptimeV[0]},`;
   }
   if (steptimeV[1]!=steptimeD.max) {
-    f=f.concat("Step.time<=",steptimeV[1],",");
+    f=`${f}Step.time<=${steptimeV[1]},`;
   }
   if (stepV!=0) {
-    f=f.concat("Step==",stepV,",");
+    f=`${f}Step==${stepV},`;
   }
   
   if (f.length) {
     f=f.substring(0,f.length-1); //remove training comma
-    f="filter(".concat(f,") %>%\n ");
+    f=`filter(${f}) %>%\n `;
   }
   return f;
 }
